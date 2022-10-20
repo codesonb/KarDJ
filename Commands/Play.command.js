@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const PlayerController = require('../Services/PlayerController.js');
 
 const name = 'a';
@@ -20,17 +20,18 @@ class Command
   {
     let channelInfo = {
       guildId: itr.member.voice.guild.id,
-      channelId: itr.member.voice.channelId,
+      vchId: itr.member.voice.channelId,
+      tchId: itr.channelId,
       adapterCreator: itr.guild.voiceAdapterCreator,
     };
 
     let link = itr.options.getString('youtube_link');
     PlayerController.add(link, channelInfo, client);
 
-    await itr.reply('Added link: ' + link);
+    await itr.reply('Starting to play...');
     setTimeout(() => {
       itr.deleteReply();
-    }, 5000);
+    }, 3000);
   }
 }
 

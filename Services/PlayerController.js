@@ -11,16 +11,24 @@ const { PassThrough } = require('stream');
 
 
 //------------------------------------------------
+let playlist = [];
+
+// ----
 let connection;
 let subscription;
 let player;
-let playlist = [];
+let playingEmbed;
 
+// ----
 function getConnection(channelInfo)
 {
   if (!connection)
   {
-    connection   = joinVoiceChannel(channelInfo);
+    let info = {
+      ...channelInfo,
+      channelId: channelInfo.vchId
+    };
+    connection   = joinVoiceChannel(info);
     player       = createAudioPlayer({
       behaviors: {
         noSubscriber: NoSubscriberBehavior.Pause,
@@ -98,8 +106,10 @@ async function playNext(client)
 
     // -------------------------------------
     // send player message
-    let channel = client.channels.cache.get(item.channelInfo.channelId);
-    await channel.send({ embeds: [new EmbedBuilder()
+    let channel = client.channels.cache.get(item.channelInfo.tchId);
+
+    if (playingEmbed) { playingEmbed.delete(); }
+    playingEmbed = await channel.send({ embeds: [new EmbedBuilder()
       .setColor(0x00FF99)
       .setAuthor({ name: 'KarDJ' })
       .setTitle('Now playing...')
@@ -109,8 +119,18 @@ async function playNext(client)
     // -------------------------------------
     // play next song
     resource.playStream.once('finish', e => {
-      playlist.shift();
-      playNext(client);
+      playlist.shift(); // remove the played item
+      if (playlist.length > 0)
+      {
+        playNext(client);
+      } else {
+        // cleanup
+        subscription.unsubscribe();
+        connection.destroy();
+        player = null;
+        subscription = null;
+        connection = null;
+      }
     });
 
   } catch (ex) {
